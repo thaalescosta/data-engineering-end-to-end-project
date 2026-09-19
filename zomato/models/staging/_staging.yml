@@ -1,0 +1,110 @@
+version: 2
+models:
+  - name: stg_food
+    description: "Cleaned food dimension containing the canonical item metadata for each menu item."
+    columns:
+      - name: f_id
+        description: "Unique identifier for each food item in the raw source."
+      - name: food_name
+        description: "Human-readable item name used across analytics models."
+      - name: veg_or_non_veg
+        description: "Normalized vegetarian flag with consistent casing."
+
+  - name: stg_menu
+    description: "Menu fact table with restaurant, food, and pricing data cleaned for join and metric use."
+    columns:
+      - name: menu_id
+        description: "Source menu record identifier."
+      - name: restaurant_id
+        description: "Normalized restaurant identifier used for joins to the restaurant dimension."
+      - name: f_id
+        description: "Food item identifier linking to the food dimension."
+      - name: price
+        description: "Menu price stored as a decimal value with two decimal places."
+
+  - name: stg_orders
+    description: "Staging model for order-level transaction data, including customer, restaurant, and fulfillment context."
+    columns:
+      - name: order_id
+        description: "Unique order identifier."
+        tests: [unique, not_null]
+      - name: customer_id
+        description: "Customer identifier mapped to the user dimension."
+        tests: [not_null]
+      - name: restaurant_id
+        description: "Restaurant identifier associated with the order."
+        tests: [not_null]
+      - name: city
+        description: "Cleaned city name extracted from the source location field."
+      - name: is_delivered
+        description: "Boolean flag indicating whether the order status is delivered."
+
+  - name: stg_order_items
+    description: "Item-level order details for analyzing quantities, pricing, and line-level revenue."
+    columns:
+      - name: order_item_id
+        description: "Unique identifier for each order line item."
+        tests: [unique, not_null]
+      - name: order_id
+        description: "Parent order identifier for each line item."
+      - name: restaurant_id
+        description: "Restaurant associated with the item line."
+      - name: f_id
+        description: "Food item referenced by the line item."
+      - name: quantity
+        description: "Numeric quantity purchased in the order line."
+      - name: line_amount
+        description: "Extended monetary value for the order line after quantity and price are applied."
+
+  - name: stg_restaurants
+    description: "Cleaned restaurant dimension including normalized IDs, location, ratings, and cost information."
+    columns:
+      - name: restaurant_id
+        description: "Unique restaurant identifier used as the primary key for the dimension."
+        tests: [unique, not_null]
+      - name: restaurant_name
+        description: "Restaurant display name."
+      - name: city
+        description: "Normalized city name extracted from the messy source field."
+      - name: rating
+        description: "Restaurant rating converted to a decimal value."
+      - name: rating_count
+        description: "Number of ratings collected for the restaurant."
+      - name: cost_for_two
+        description: "Approximate cost for two people, parsed from the raw cost string."
+
+  - name: stg_users
+    description: "Customer dimension with normalized personal and demographic attributes for profile analysis."
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier used throughout the warehouse."
+        tests: [unique, not_null]
+      - name: customer_name
+        description: "Customer display name."
+      - name: email
+        description: "Lowercased email address for deduplication and profile matching."
+      - name: age
+        description: "Customer age converted to a numeric field."
+      - name: income_band
+        description: "Income category or band stored as provided by the source system."
+
+  - name: stg_reviews
+    description: "Customer review fact table enriched with the cleaned restaurant city for location-aware review analysis."
+    columns:
+      - name: review_id
+        description: "Unique review identifier."
+        tests: [unique, not_null]
+      - name: order_id
+        description: "Order linked to the review record."
+      - name: customer_id
+        description: "Customer associated with the review."
+      - name: restaurant_id
+        description: "Restaurant referenced by the review."
+      - name: rating
+        description: "Numeric review score."
+      - name: comment
+        description: "Customer review text retained for text and sentiment analysis."
+      - name: review_date
+        description: "Date the review was submitted."
+      - name: city
+        description: "Restaurant city joined from the restaurant staging model for enrichment."
