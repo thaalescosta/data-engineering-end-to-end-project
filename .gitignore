@@ -8,3 +8,4 @@ wheels/
 raw/*
 # Virtual environments
 .venv
+.env
